@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+  FoodClique WFD 2026 Attendance Scanner
+</title>
+
+
+<script
+  src="https://unpkg.com/html5-qrcode"
+  type="text/javascript">
+</script>
+
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+
+  margin: 0;
+
+  font-family:
+    Arial,
+    sans-serif;
+
+  background:
+    #f3f7f4;
+
+  color:
+    #222;
+}
+
+
+.header {
+
+  background:
+    #16833b;
+
+  color:
+    white;
+
+  padding:
+    20px;
+
+  text-align:
+    center;
+}
+
+
+.header h1 {
+
+  margin:
+    0 0 6px;
+
+  font-size:
+    24px;
+}
+
+
+.header p {
+
+  margin:
+    0;
+
+  opacity:
+    0.9;
+}
+
+
+.container {
+
+  width:
+    100%;
+
+  max-width:
+    600px;
+
+  margin:
+    20px auto;
+
+  padding:
+    20px;
+}
+
+
+.card {
+
+  background:
+    white;
+
+  border-radius:
+    16px;
+
+  padding:
+    20px;
+
+  box-shadow:
+    0 3px 15px
+    rgba(0,0,0,0.08);
+}
+
+
+label {
+
+  display:
+    block;
+
+  font-weight:
+    bold;
+
+  margin-bottom:
+    8px;
+}
+
+
+select {
+
+  width:
+    100%;
+
+  padding:
+    14px;
+
+  border:
+    1px solid #ccc;
+
+  border-radius:
+    8px;
+
+  font-size:
+    16px;
+
+  background:
+    white;
+
+  margin-bottom:
+    20px;
+}
+
+
+#reader {
+
+  width:
+    100%;
+}
+
+
+button {
+
+  width:
+    100%;
+
+  padding:
+    14px;
+
+  border:
+    none;
+
+  border-radius:
+    8px;
+
+  background:
+    #16833b;
+
+  color:
+    white;
+
+  font-size:
+    16px;
+
+  font-weight:
+    bold;
+
+  margin-top:
+    15px;
+}
+
+
+button:disabled {
+
+  opacity:
+    0.5;
+}
+
+
+.result {
+
+  display:
+    none;
+
+  margin-top:
+    20px;
+
+  padding:
+    18px;
+
+  border-radius:
+    10px;
+
+  line-height:
+    1.6;
+}
+
+
+.success {
+
+  display:
+    block;
+
+  background:
+    #e7f7ec;
+
+  border:
+    1px solid #9bd5aa;
+
+  color:
+    #126b2f;
+}
+
+
+.error {
+
+  display:
+    block;
+
+  background:
+    #ffe8e8;
+
+  border:
+    1px solid #efa5a5;
+
+  color:
+    #9c0000;
+}
+
+
+.warning {
+
+  display:
+    block;
+
+  background:
+    #fff4d7;
+
+  border:
+    1px solid #e1c46c;
+
+  color:
+    #765600;
+}
+
+
+.result-title {
+
+  font-size:
+    21px;
+
+  font-weight:
+    bold;
+
+  margin-bottom:
+    8px;
+}
+
+
+.status {
+
+  margin-top:
+    15px;
+
+  padding:
+    10px;
+
+  border-radius:
+    8px;
+
+  background:
+    #f2f2f2;
+
+  font-size:
+    14px;
+}
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+  <h1>
+    FoodClique WFD 2026
+  </h1>
+
+  <p>
+    Attendance Scanner
+  </p>
+
+</div>
+
+
+<div class="container">
+
+<div class="card">
+
+
+<label for="event">
+  Select Event
+</label>
+
+
+<select id="event">
+
+  <option value="">
+    -- Select Event --
+  </option>
+
+  <option
+    value="Zero Hunger Match — 10 October 2026"
+  >
+    Zero Hunger Match — 10 October 2026
+  </option>
+
+  <option
+    value="World Food Day Food Distribution — 16 October 2026"
+  >
+    World Food Day Food Distribution
+    — 16 October 2026
+  </option>
+
+</select>
+
+
+<div id="reader"></div>
+
+
+<div
+  id="result"
+  class="result">
+</div>
+
+
+<button
+  id="startButton"
+  onclick="startScanner()"
+>
+  Start Camera
+</button>
+
+
+<button
+  id="stopButton"
+  onclick="stopScanner()"
+  style="display:none;"
+>
+  Stop Camera
+</button>
+
+
+<div
+  id="systemStatus"
+  class="status"
+>
+  Scanner ready.
+</div>
+
+
+</div>
+
+</div>
+
+
+<script>
+
+
+/************************************************
+ * IMPORTANT
+ *
+ * Replace this with your Apps Script /exec URL.
+ ************************************************/
+
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxjLv5LwqC9tldiydgYOxb-64R-5GjS0Zv2C8V1amQTH2WY8Fbvegn0oRWOhHHqyzs/exec";
+
+
+let scanner = null;
+
+let scannerRunning = false;
+
+let processing = false;
+
+
+/************************************************
+ * START CAMERA
+ ************************************************/
+
+async function startScanner() {
+
+  const event =
+    document
+      .getElementById("event")
+      .value;
+
+
+  if (!event) {
+
+    showResult(
+      "error",
+      "Select an Event",
+      "Please select the event before starting the scanner."
+    );
+
+    return;
+  }
+
+
+  if (scannerRunning) {
+
+    return;
+  }
+
+
+  scanner =
+    new Html5Qrcode(
+      "reader"
+    );
+
+
+  try {
+
+    await scanner.start(
+
+      {
+        facingMode:
+          "environment"
+      },
+
+      {
+
+        fps: 10,
+
+        qrbox: {
+          width: 250,
+          height: 250
+        }
+
+      },
+
+      onScanSuccess,
+
+      onScanFailure
+
+    );
+
+
+    scannerRunning = true;
+
+
+    document
+      .getElementById(
+        "startButton"
+      )
+      .style.display = "none";
+
+
+    document
+      .getElementById(
+        "stopButton"
+      )
+      .style.display = "block";
+
+
+    setStatus(
+      "Camera is active. Scan a participant's QR code."
+    );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+
+    showResult(
+      "error",
+      "Camera Error",
+      "The camera could not be started. Check your browser camera permission and make sure this page is being opened through HTTPS."
+    );
+
+  }
+
+}
+
+
+/************************************************
+ * STOP CAMERA
+ ************************************************/
+
+async function stopScanner() {
+
+  if (
+    scanner &&
+    scannerRunning
+  ) {
+
+    try {
+
+      await scanner.stop();
+
+    } catch (error) {
+
+      console.error(error);
+
+    }
+
+  }
+
+
+  scannerRunning = false;
+
+
+  document
+    .getElementById(
+      "startButton"
+    )
+    .style.display = "block";
+
+
+  document
+    .getElementById(
+      "stopButton"
+    )
+    .style.display = "none";
+
+
+  setStatus(
+    "Camera stopped."
+  );
+}
+
+
+/************************************************
+ * QR SUCCESS
+ ************************************************/
+
+function onScanSuccess(decodedText) {
+
+  if (processing) {
+
+    return;
+  }
+
+
+  const event =
+    document
+      .getElementById(
+        "event"
+      )
+      .value;
+
+
+  if (!event) {
+
+    showResult(
+      "error",
+      "Select an Event",
+      "Please select an event."
+    );
+
+    return;
+  }
+
+
+  processing = true;
+
+
+  setStatus(
+    "QR detected. Checking registration..."
+  );
+
+
+  checkInViaApi(
+    decodedText,
+    event
+  );
+
+}
+
+
+/************************************************
+ * QR FAILURE
+ ************************************************/
+
+function onScanFailure(error) {
+
+  // Normal.
+  // QR scanner continuously tries to detect a code.
+
+}
+
+
+/************************************************
+ * CALL APPS SCRIPT USING JSONP
+ ************************************************/
+
+function checkInViaApi(
+  registrationId,
+  eventName
+) {
+
+
+  const callbackName =
+    "foodCliqueCallback_" +
+    Date.now();
+
+
+  window[callbackName] =
+    function(response) {
+
+      try {
+
+        handleResponse(
+          response
+        );
+
+      } finally {
+
+        delete window[
+          callbackName
+        ];
+
+      }
+
+    };
+
+
+  const script =
+    document.createElement(
+      "script"
+    );
+
+
+  const url =
+    API_URL +
+
+    "?api=checkin" +
+
+    "&registrationId=" +
+    encodeURIComponent(
+      registrationId
+    ) +
+
+    "&event=" +
+    encodeURIComponent(
+      eventName
+    ) +
+
+    "&callback=" +
+    encodeURIComponent(
+      callbackName
+    );
+
+
+  script.src =
+    url;
+
+
+  script.onerror =
+    function() {
+
+      processing = false;
+
+
+      showResult(
+        "error",
+        "Connection Error",
+        "The scanner could not communicate with the FoodClique attendance system. Check the internet connection."
+      );
+
+
+      delete window[
+        callbackName
+      ];
+
+      script.remove();
+    };
+
+
+  document
+    .body
+    .appendChild(
+      script
+    );
+
+
+  setTimeout(
+    function() {
+
+      script.remove();
+
+    },
+    15000
+  );
+
+}
+
+
+/************************************************
+ * API RESPONSE
+ ************************************************/
+
+function handleResponse(
+  response
+) {
+
+  processing = false;
+
+
+  if (
+    response.success
+  ) {
+
+    showResult(
+
+      "success",
+
+      "✓ Attendance Confirmed",
+
+      "<strong>Name:</strong> " +
+
+      escapeHtml(
+        response.participant.name
+      ) +
+
+      "<br>" +
+
+      "<strong>Type:</strong> " +
+
+      escapeHtml(
+        response.participant.type
+      ) +
+
+      "<br>" +
+
+      "<strong>Check-in:</strong> " +
+
+      escapeHtml(
+        response.time
+      )
+
+    );
+
+
+    setStatus(
+      "Attendance successfully recorded."
+    );
+
+
+    return;
+  }
+
+
+  if (
+    response.duplicate
+  ) {
+
+    showResult(
+
+      "warning",
+
+      "⚠ Already Checked In",
+
+      "<strong>Name:</strong> " +
+
+      escapeHtml(
+        response.participant.name
+      ) +
+
+      "<br><br>" +
+
+      "This participant has already been checked in for this event." +
+
+      (
+        response.previousTime
+        ?
+
+        "<br><br><strong>Previous check-in:</strong> " +
+
+        escapeHtml(
+          response.previousTime
+        )
+
+        :
+
+        ""
+      )
+
+    );
+
+
+    setStatus(
+      "Duplicate scan detected."
+    );
+
+
+    return;
+  }
+
+
+  showResult(
+
+    "error",
+
+    "✕ Check-in Failed",
+
+    escapeHtml(
+      response.message ||
+      "Unknown error."
+    )
+
+  );
+
+
+  setStatus(
+    "Ready for another scan."
+  );
+}
+
+
+/************************************************
+ * DISPLAY RESULT
+ ************************************************/
+
+function showResult(
+  type,
+  title,
+  message
+) {
+
+  const result =
+    document.getElementById(
+      "result"
+    );
+
+
+  result.className =
+    "result " +
+    type;
+
+
+  result.innerHTML =
+
+    "<div class='result-title'>" +
+
+    title +
+
+    "</div>" +
+
+    message;
+
+
+  result.style.display =
+    "block";
+}
+
+
+/************************************************
+ * STATUS
+ ************************************************/
+
+function setStatus(
+  message
+) {
+
+  document
+    .getElementById(
+      "systemStatus"
+    )
+    .textContent =
+    message;
+}
+
+
+/************************************************
+ * ESCAPE HTML
+ ************************************************/
+
+function escapeHtml(
+  text
+) {
+
+  return String(
+    text ?? ""
+  )
+
+  .replace(
+    /&/g,
+    "&amp;"
+  )
+
+  .replace(
+    /</g,
+    "&lt;"
+  )
+
+  .replace(
+    />/g,
+    "&gt;"
+  )
+
+  .replace(
+    /"/g,
+    "&quot;"
+  )
+
+  .replace(
+    /'/g,
+    "&#039;"
+  );
+}
+
+
+/************************************************
+ * EVENT CHANGE
+ ************************************************/
+
+document
+  .getElementById(
+    "event"
+  )
+  .addEventListener(
+    "change",
+    function() {
+
+      clearResult();
+
+      setStatus(
+        "Event selected. Start the camera."
+      );
+
+    }
+  );
+
+
+/************************************************
+ * CLEAR RESULT
+ ************************************************/
+
+function clearResult() {
+
+  const result =
+    document.getElementById(
+      "result"
+    );
+
+  result.style.display =
+    "none";
+}
+
+
+</script>
+
+
+</body>
+
+</html>
