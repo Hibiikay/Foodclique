@@ -725,16 +725,20 @@ function checkInViaApi(
  * API RESPONSE
  ************************************************/
 
-function handleResponse(
-  response
-) {
+/************************************************
+ * API RESPONSE
+ ************************************************/
+
+function handleResponse(response) {
 
   processing = false;
 
 
-  if (
-    response.success
-  ) {
+  /* ------------------------------------------------
+     SUCCESS
+     ------------------------------------------------ */
+
+  if (response && response.success) {
 
     showResult(
 
@@ -745,7 +749,8 @@ function handleResponse(
       "<strong>Name:</strong> " +
 
       escapeHtml(
-        response.participant.name
+        response.participantName ||
+        "Participant"
       ) +
 
       "<br>" +
@@ -753,7 +758,17 @@ function handleResponse(
       "<strong>Type:</strong> " +
 
       escapeHtml(
-        response.participant.type
+        response.participantType ||
+        "Participant"
+      ) +
+
+      "<br>" +
+
+      "<strong>Registration ID:</strong> " +
+
+      escapeHtml(
+        response.registrationId ||
+        ""
       ) +
 
       "<br>" +
@@ -761,7 +776,8 @@ function handleResponse(
       "<strong>Check-in:</strong> " +
 
       escapeHtml(
-        response.time
+        response.checkInTime ||
+        ""
       )
 
     );
@@ -776,7 +792,12 @@ function handleResponse(
   }
 
 
+  /* ------------------------------------------------
+     DUPLICATE CHECK-IN
+     ------------------------------------------------ */
+
   if (
+    response &&
     response.duplicate
   ) {
 
@@ -789,7 +810,17 @@ function handleResponse(
       "<strong>Name:</strong> " +
 
       escapeHtml(
-        response.participant.name
+        response.participantName ||
+        "Participant"
+      ) +
+
+      "<br>" +
+
+      "<strong>Registration ID:</strong> " +
+
+      escapeHtml(
+        response.registrationId ||
+        ""
       ) +
 
       "<br><br>" +
@@ -797,18 +828,21 @@ function handleResponse(
       "This participant has already been checked in for this event." +
 
       (
-        response.previousTime
+
+        response.checkInTime
+
         ?
 
         "<br><br><strong>Previous check-in:</strong> " +
 
         escapeHtml(
-          response.previousTime
+          response.checkInTime
         )
 
         :
 
         ""
+
       )
 
     );
@@ -823,6 +857,10 @@ function handleResponse(
   }
 
 
+  /* ------------------------------------------------
+     FAILED CHECK-IN
+     ------------------------------------------------ */
+
   showResult(
 
     "error",
@@ -830,8 +868,23 @@ function handleResponse(
     "✕ Check-in Failed",
 
     escapeHtml(
-      response.message ||
+
+      (
+        response &&
+        response.error
+      )
+
+      ||
+
+      (
+        response &&
+        response.message
+      )
+
+      ||
+
       "Unknown error."
+
     )
 
   );
@@ -841,7 +894,6 @@ function handleResponse(
     "Ready for another scan."
   );
 }
-
 
 /************************************************
  * DISPLAY RESULT
